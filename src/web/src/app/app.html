@@ -1,0 +1,23 @@
+<!-- Link de atalho: primeiro elemento focável da página, permite pular a navegação. -->
+<a class="pular-para-conteudo" href="#conteudo-principal">Pular para o conteúdo principal</a>
+
+<header class="cabecalho">
+  <h1 class="cabecalho__titulo">{{ tituloDoSistema }}</h1>
+
+  <nav class="cabecalho__navegacao" aria-label="Navegação principal">
+    <ul class="menu">
+      <li>
+        <a routerLink="/" routerLinkActive="menu__item--ativo" ariaCurrentWhenActive="page"
+           [routerLinkActiveOptions]="{ exact: true }">Início</a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<main id="conteudo-principal" class="conteudo" tabindex="-1">
+  <router-outlet />
+</main>
+
+<footer class="rodape">
+  <p>Projeto Integrador — UNIVESP</p>
+</footer>

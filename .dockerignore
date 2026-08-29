@@ -1,0 +1,28 @@
+# Artefatos de build do .NET
+**/bin/
+**/obj/
+**/out/
+**/publish/
+**/TestResults/
+**/*.user
+
+# Front-end (tem o próprio contexto de build em src/web)
+src/web/
+
+# Controle de versão e ferramentas
+.git/
+.github/
+.vs/
+.vscode/
+.idea/
+.claude/
+
+# Docker e ambiente
+Dockerfile
+.dockerignore
+compose.yaml
+.env
+.env.*
+
+# Documentação
+**/*.md

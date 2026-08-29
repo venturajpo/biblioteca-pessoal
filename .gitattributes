@@ -1,0 +1,20 @@
+# Normaliza as quebras de linha no repositório: LF no que é versionado,
+# convertido para o padrão do sistema no diretório de trabalho.
+# Mantém coerência com o `end_of_line = lf` do .editorconfig.
+* text=auto eol=lf
+
+# Scripts que só rodam no Windows precisam de CRLF.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Arquivos binários: nunca converter.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
+*.zip  binary
