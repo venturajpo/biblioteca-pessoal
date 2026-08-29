@@ -1,0 +1,24 @@
+<h2>Bem-vindo(a)</h2>
+
+<p>
+  Aqui você cadastra os livros que possui, acompanha o que está lendo e registra
+  o que já leu. Esta é a estrutura inicial do projeto — as telas de estante,
+  busca no catálogo externo e estatísticas ainda serão desenvolvidas.
+</p>
+
+<section class="cartao" aria-labelledby="titulo-diagnostico">
+  <h3 id="titulo-diagnostico">Conexão com a API</h3>
+
+  <!-- aria-live: o resultado da chamada é anunciado por leitores de tela. -->
+  <p role="status" aria-live="polite">
+    @if (carregando()) {
+      Consultando a API…
+    } @else if (erro(); as mensagem) {
+      <span class="estado estado--erro">{{ mensagem }}</span>
+    } @else if (status(); as dados) {
+      <span class="estado estado--ok">
+        Conectado a {{ dados.aplicacao }} v{{ dados.versao }} (ambiente {{ dados.ambiente }}).
+      </span>
+    }
+  </p>
+</section>

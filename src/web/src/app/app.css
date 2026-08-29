@@ -1,0 +1,81 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.pular-para-conteudo {
+  position: absolute;
+  left: -9999px;
+  z-index: 10;
+  padding: 0.75rem 1rem;
+  background-color: var(--cor-destaque);
+  color: var(--cor-destaque-contraste);
+  border-radius: 0 0 var(--raio) 0;
+  text-decoration: none;
+}
+
+.pular-para-conteudo:focus {
+  left: 0;
+  top: 0;
+}
+
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco);
+  padding: var(--espaco) clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--cor-borda);
+  background-color: var(--cor-superficie);
+}
+
+.cabecalho__titulo {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.menu {
+  display: flex;
+  gap: var(--espaco);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu a {
+  padding: 0.25rem 0;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.menu a:hover {
+  text-decoration: underline;
+}
+
+.menu__item--ativo {
+  border-bottom-color: var(--cor-destaque);
+  font-weight: 600;
+}
+
+.conteudo {
+  flex: 1;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+/* Remove o contorno ao receber foco programático vindo do link de atalho. */
+.conteudo:focus {
+  outline: none;
+}
+
+.rodape {
+  padding: var(--espaco) clamp(1rem, 4vw, 3rem);
+  border-top: 1px solid var(--cor-borda);
+  color: var(--cor-texto-suave);
+  font-size: 0.875rem;
+}
+
+.rodape p {
+  margin: 0;
+}
