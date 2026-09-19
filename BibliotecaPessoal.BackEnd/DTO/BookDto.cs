@@ -6,48 +6,52 @@ public class BookListResponse
 {
     [JsonPropertyName("count")]
     public int Count { get; set; }
-    
+
     [JsonPropertyName("page_count")]
     public int PagesCount { get; set; }
-    
+
+    // Tem de ser propriedade, nao campo: o System.Text.Json ignora campos por padrao.
     [JsonPropertyName("books")]
-    public List<BookDto> Books;
+    public List<BookDto> Books { get; set; } = [];
 }
 
 public class BookDto
 {
     [JsonPropertyName("isbn")]
-    string ISBN { get; set; }
-    
+    public string Isbn { get; set; } = string.Empty;
+
     [JsonPropertyName("title")]
-    string Title { get; set; }
-    
+    public string Title { get; set; } = string.Empty;
+
     [JsonPropertyName("author")]
-    string Author { get; set; }
-    
+    public string? Author { get; set; }
+
+    [JsonPropertyName("image")]
+    public string? Image { get; set; }
+
     [JsonPropertyName("progress")]
-    double Progress { get; set; }
-    
+    public double Progress { get; set; }
+
     [JsonPropertyName("pages_read")]
-    int PagesRead { get; set; }
-    
+    public int PagesRead { get; set; }
+
     [JsonPropertyName("pages_total")]
-    int PagesTotal { get; set; }
-    
+    public int? PagesTotal { get; set; }
+
     [JsonPropertyName("rating")]
-    double Rating { get; set; }
-    
+    public decimal? Rating { get; set; }
+
     [JsonPropertyName("review")]
-    string Review { get; set; }
-    
+    public string? Review { get; set; }
+
     [JsonPropertyName("synopsis")]
-    string Synopsis { get; set; }
+    public string? Synopsis { get; set; }
 }
 
 public class BookRegisterDto
 {
     [JsonPropertyName("isbn")]
-    public string ISBN { get; set; }
+    public string ISBN { get; set; } = string.Empty;
 }
 
 public class BookUpdateProgressDto
@@ -59,11 +63,11 @@ public class BookUpdateProgressDto
 public class BookUpdateRatingDto
 {
     [JsonPropertyName("rating")]
-    public double Rating { get; set; }
+    public decimal Rating { get; set; }
 }
 
 public class BookUpdateReviewDto
 {
     [JsonPropertyName("review")]
-    public string Review { get; set; }
+    public string? Review { get; set; }
 }

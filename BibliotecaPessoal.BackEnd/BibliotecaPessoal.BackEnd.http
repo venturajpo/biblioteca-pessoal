@@ -1,6 +1,117 @@
-@BibliotecaPessoal.BackEnd_HostAddress = http://localhost:5161
+@host = https://localhost:7191
 
-GET {{BibliotecaPessoal.BackEnd_HostAddress}}/weatherforecast/
+### 1. Listagem (padrao: pagina 1, 20 itens, ordenado por titulo)
+GET {{host}}/Book
 Accept: application/json
+
+### 2. Listagem ordenada por nota, decrescente
+GET {{host}}/Book?sort_by=rating&sort_direction=desc
+Accept: application/json
+
+### 3. Listagem filtrada por titulo
+GET {{host}}/Book?filter_by=title&filter=dom
+Accept: application/json
+
+### 4. Teste de seguranca: sort_by invalido deve cair no padrao, nunca executar.
+### O valor e "nome;DROP TABLE livro" com os espacos e o ponto-e-virgula codificados,
+### porque a linha de requisicao nao aceita espaco literal na URL.
+GET {{host}}/Book?sort_by=nome%3BDROP%20TABLE%20livro
+Accept: application/json
+
+### 5. Pagina alem do fim: deve devolver books vazio, nao erro
+GET {{host}}/Book?page=99
+Accept: application/json
+
+### 6. Busca por ISBN existente (linha de teste completa)
+GET {{host}}/Book/9788535902778
+Accept: application/json
+
+### 7. Busca por ISBN com hifens: deve encontrar o mesmo livro
+GET {{host}}/Book/978-85-359-0277-8
+Accept: application/json
+
+### 8. Busca por ISBN inexistente: deve dar 404
+GET {{host}}/Book/0000000000000
+Accept: application/json
+
+### 9. Cadastro de livro novo (depende da chave da Google Books)
+POST {{host}}/Book
+Content-Type: application/json
+
+{
+  "isbn": "9780132350884"
+}
+
+### 10. Cadastro repetido do mesmo ISBN: deve dar 409
+POST {{host}}/Book
+Content-Type: application/json
+
+{
+  "isbn": "9780132350884"
+}
+
+### 11. Cadastro de ISBN que nao existe na Google Books: deve dar 422
+POST {{host}}/Book
+Content-Type: application/json
+
+{
+  "isbn": "9999999999999"
+}
+
+### 12. Atualizar progresso (nao usa a Google Books, so o banco)
+POST {{host}}/UpdateProgress/9788535902778
+Content-Type: application/json
+
+{
+  "pages_read": 200
+}
+
+### 13. Progresso acima do total de paginas: deve dar 400
+POST {{host}}/UpdateProgress/9788535902778
+Content-Type: application/json
+
+{
+  "pages_read": 99999
+}
+
+### 14. Progresso em ISBN inexistente: deve dar 404
+POST {{host}}/UpdateProgress/0000000000000
+Content-Type: application/json
+
+{
+  "pages_read": 10
+}
+
+### 15. Atualizar nota
+POST {{host}}/UpdateRating/9788533613379
+Content-Type: application/json
+
+{
+  "rating": 8.5
+}
+
+### 16. Nota fora da faixa: deve dar 400
+POST {{host}}/UpdateRating/9788533613379
+Content-Type: application/json
+
+{
+  "rating": 11
+}
+
+### 17. Atualizar anotacao
+POST {{host}}/UpdateReview/9788533613379
+Content-Type: application/json
+
+{
+  "review": "Parei no capitulo 12."
+}
+
+### 18. Anotacao em ISBN inexistente: deve dar 404
+POST {{host}}/UpdateReview/0000000000000
+Content-Type: application/json
+
+{
+  "review": "teste"
+}
 
 ###
