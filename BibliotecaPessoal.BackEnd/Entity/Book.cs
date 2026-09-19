@@ -6,17 +6,17 @@ public class Book
 
     public required string Title { get; set; }
 
-    public string? Author { get; set; }
+    public string Author { get; set; }
 
-    public string? Synopsis { get; set; }
+    public string Synopsis { get; set; }
 
-    public string? ImageUrl { get; set; }
+    public byte[]? Cover { get; set; }
 
-    public DateOnly RegisteredAt { get; set; }
+    public DateOnly RegisteredDate { get; set; }
 
-    public int? PagesTotal { get; set; }
+    public ushort? PagesTotal { get; set; }
 
-    public int PagesRead { get; set; }
+    public ushort PagesRead { get; set; }
 
     public decimal? Rating { get; set; }
 

@@ -23,6 +23,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+#General
+*.DotSettings.user
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json
