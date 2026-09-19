@@ -1,1 +1,175 @@
-<p>detalhes works!</p>
+<a routerLink="/" class="back">← Voltar para a biblioteca</a>
+
+@if (book(); as b) {
+  <article class="detail">
+    <div class="cover">
+      @if (b.image && !coverFailed()) {
+        <img
+          [ngSrc]="b.image"
+          width="200"
+          height="300"
+          priority
+          alt=""
+          (error)="coverFailed.set(true)"
+        />
+      } @else {
+        <span class="placeholder" aria-hidden="true">{{ b.title }}</span>
+      }
+    </div>
+
+    <div class="content">
+      <header class="heading">
+        <h1>{{ b.title }}</h1>
+        <p class="author">{{ b.author ?? 'Autor desconhecido' }}</p>
+        <p class="isbn">ISBN {{ b.isbn }}</p>
+      </header>
+
+      <!-- Progresso -->
+      <section class="panel" aria-labelledby="progresso-titulo">
+        <h2 id="progresso-titulo">Progresso de leitura</h2>
+
+        <div
+          class="progress"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Progresso de leitura"
+          [attr.aria-valuenow]="b.progress"
+        >
+          <div class="bar" [style.width.%]="b.progress"></div>
+        </div>
+        <p class="summary">{{ progressSummary() }}</p>
+
+        <form id="form-progresso" class="row" (submit)="saveProgress($event)" novalidate>
+          <div class="field">
+            <label for="pages-read">Páginas lidas</label>
+            <input
+              #pr
+              id="pages-read"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="1"
+              [attr.max]="b.pages_total"
+              [value]="progressDraft()"
+              (input)="onProgressInput(pr.value)"
+              [attr.aria-invalid]="progressState().status === 'error' ? 'true' : null"
+              aria-describedby="progresso-status"
+            />
+          </div>
+          <button type="submit" class="btn" [disabled]="progressState().status === 'saving'">
+            Salvar progresso
+          </button>
+          @if (b.pages_total) {
+            <button
+              type="button"
+              class="btn secondary"
+              [disabled]="progressState().status === 'saving'"
+              (click)="finish()"
+            >
+              Terminei o livro
+            </button>
+          }
+        </form>
+        <p
+          id="progresso-status"
+          class="save-status"
+          role="status"
+          [class.error]="progressState().status === 'error'"
+          [class.ok]="progressState().status === 'saved'"
+        >
+          {{ progressState().message }}
+        </p>
+      </section>
+
+      <!-- Nota -->
+      <section class="panel" aria-labelledby="nota-titulo">
+        <h2 id="nota-titulo">Sua nota</h2>
+
+        <form id="form-nota" class="row" (submit)="saveRating($event)" novalidate>
+          <div class="field">
+            <label for="rating">Nota de 0 a 10</label>
+            <input
+              #rt
+              id="rating"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              [value]="ratingDraft()"
+              (input)="onRatingInput(rt.value)"
+              [attr.aria-invalid]="ratingState().status === 'error' ? 'true' : null"
+              aria-describedby="nota-dica nota-status"
+            />
+          </div>
+          <button type="submit" class="btn" [disabled]="ratingState().status === 'saving'">
+            Salvar nota
+          </button>
+        </form>
+        <p id="nota-dica" class="hint">Pode usar uma casa decimal, por exemplo 8,5.</p>
+        <p
+          id="nota-status"
+          class="save-status"
+          role="status"
+          [class.error]="ratingState().status === 'error'"
+          [class.ok]="ratingState().status === 'saved'"
+        >
+          {{ ratingState().message }}
+        </p>
+      </section>
+
+      <!-- Anotacao -->
+      <section class="panel" aria-labelledby="anotacao-titulo">
+        <h2 id="anotacao-titulo">Anotações</h2>
+
+        <form id="form-anotacao" (submit)="saveReview($event)" novalidate>
+          <div class="field">
+            <label for="review">Suas anotações sobre o livro</label>
+            <textarea
+              #rv
+              id="review"
+              rows="5"
+              [value]="reviewDraft()"
+              (input)="onReviewInput(rv.value)"
+              aria-describedby="anotacao-status"
+            ></textarea>
+          </div>
+          <div class="row">
+            <button type="submit" class="btn" [disabled]="reviewState().status === 'saving'">
+              Salvar anotação
+            </button>
+          </div>
+        </form>
+        <p
+          id="anotacao-status"
+          class="save-status"
+          role="status"
+          [class.error]="reviewState().status === 'error'"
+          [class.ok]="reviewState().status === 'saved'"
+        >
+          {{ reviewState().message }}
+        </p>
+      </section>
+
+      <!-- Sinopse -->
+      @if (synopsis()) {
+        <section class="panel" aria-labelledby="sinopse-titulo">
+          <h2 id="sinopse-titulo">Sinopse</h2>
+          <p class="synopsis">{{ synopsis() }}</p>
+        </section>
+      }
+    </div>
+  </article>
+} @else if (resource.error()) {
+  <div class="alert error" role="alert">
+    @if (notFound()) {
+      <p class="alert-text">Não encontramos este livro na sua biblioteca.</p>
+    } @else {
+      <p class="alert-text">Não foi possível carregar o livro.</p>
+      <button type="button" class="btn secondary" (click)="resource.reload()">
+        Tentar de novo
+      </button>
+    }
+  </div>
+} @else {
+  <p class="status" role="status">Carregando livro…</p>
+}
