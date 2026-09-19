@@ -1,0 +1,106 @@
+<h1>Minha biblioteca</h1>
+
+<div class="controls">
+  <div class="field">
+    <label for="busca">Buscar por título</label>
+    <input
+      #q
+      id="busca"
+      type="search"
+      placeholder="O que está procurando?"
+      [value]="search()"
+      (input)="onSearch(q.value)"
+    />
+  </div>
+
+  <div class="field">
+    <label for="ordem">Ordenar por</label>
+    <select #s id="ordem" [value]="sort()" (change)="onSort(s.value)">
+      @for (option of sortOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (books.error()) {
+  <div class="alert error" role="alert">
+    <p>Não foi possível carregar os livros.</p>
+    <button type="button" class="btn secondary" (click)="books.reload()">Tentar de novo</button>
+  </div>
+} @else if (books.isLoading()) {
+  <p class="status" role="status">Carregando livros…</p>
+} @else if (books.hasValue()) {
+  @let result = books.value();
+
+  @if (result.books.length === 0) {
+    <div class="empty" role="status">
+      @if (filter()) {
+        <p>Nenhum livro encontrado para “{{ filter() }}”.</p>
+      } @else {
+        <p>Sua biblioteca está vazia.</p>
+        <a routerLink="/adicionar" class="btn">Adicionar o primeiro livro</a>
+      }
+    </div>
+  } @else {
+    <p class="status" role="status">
+      {{ result.count }} {{ result.count === 1 ? 'livro' : 'livros' }}
+    </p>
+
+    <ul class="grid">
+      @for (book of result.books; track book.isbn) {
+        <li class="card">
+          <div class="cover">
+            @if (book.image && !failedCovers().has(book.isbn)) {
+              <img [ngSrc]="book.image" fill alt="" (error)="onCoverError(book.isbn)" />
+            } @else {
+              <span class="placeholder" aria-hidden="true">{{ book.title }}</span>
+            }
+          </div>
+
+          <div class="info">
+            <h2 class="title">
+              <a [routerLink]="['/livro', book.isbn]">{{ book.title }}</a>
+            </h2>
+            <p class="author">{{ book.author ?? 'Autor desconhecido' }}</p>
+
+            <div
+              class="progress"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="book.progress"
+              [attr.aria-label]="'Progresso de leitura de ' + book.title"
+            >
+              <div class="bar" [style.width.%]="book.progress"></div>
+            </div>
+
+            <p class="meta">
+              <span>{{ progressLabel(book) }}</span>
+              @if (book.rating !== null) {
+                <span>★ {{ book.rating }}</span>
+              }
+            </p>
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (result.page_count > 1) {
+      <nav class="pager" aria-label="Paginação">
+        <button type="button" class="btn secondary" [disabled]="page() <= 1" (click)="goTo(page() - 1)">
+          Anterior
+        </button>
+        <span>Página {{ page() }} de {{ result.page_count }}</span>
+        <button
+          type="button"
+          class="btn secondary"
+          [disabled]="page() >= result.page_count"
+          (click)="goTo(page() + 1)"
+        >
+          Próxima
+        </button>
+      </nav>
+    }
+  }
+}

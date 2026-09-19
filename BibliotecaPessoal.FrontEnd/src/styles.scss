@@ -1,1 +1,114 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  color-scheme: dark;
+  --bg: #16181d;
+  --surface: #1f2229;
+  --surface-2: #2a2e38;
+  --text: #ececef;
+  --muted: #a9aeb9;
+  --primary: #c9a4ff;
+  --primary-contrast: #1a1033;
+  --border: #363b47;
+  --danger: #ff9b91;
+  --success: #6ee7a0;
+  --focus: #7dd3fc;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+}
+
+a {
+  color: var(--primary);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.secondary {
+    background: var(--surface);
+    color: var(--primary);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-weight: 600;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--muted);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+  }
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border: 1px solid currentcolor;
+  border-radius: var(--radius);
+  background: var(--surface);
+
+  &.error {
+    color: var(--danger);
+  }
+
+  &.success {
+    color: var(--success);
+  }
+}
