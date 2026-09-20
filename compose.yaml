@@ -1,0 +1,26 @@
+﻿services:  
+  db:
+   image: mariadb
+   restart: always
+   environment:
+     MARIADB_ROOT_PASSWORD: veryhardpassword
+   ports:
+     - "3306:3306"
+   networks:
+     - app_network
+   volumes:
+     - ./BibliotecaPessoal.BackEnd/DBScript:/docker-entrypoint-initdb.d
+  bibliotecapessoal.backend:
+    image: bibliotecapessoal.backend
+    ports:
+      - "5161:8080"
+    build:
+      context: .
+      dockerfile: BibliotecaPessoal.BackEnd/Dockerfile
+    networks:
+      - app_network
+    depends_on:
+      - db
+networks:
+  app_network:
+    driver: bridge

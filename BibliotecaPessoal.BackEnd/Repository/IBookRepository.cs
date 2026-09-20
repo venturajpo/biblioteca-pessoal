@@ -4,26 +4,23 @@ namespace BibliotecaPessoal.BackEnd.Repository;
 
 public interface IBookRepository
 {
-    Task<Book?> GetByIsbnAsync(string isbn, CancellationToken ct = default);
+    Task<Book?> GetByIsbnAsync(string isbn);
 
-    Task<(IReadOnlyList<Book> Items, int TotalCount)> GetPagedAsync(
+    IQueryable<Book> QueryPaged(
+        IQueryable<Book> query,
         int page,
-        int pageSize,
-        string? sortBy,
-        bool ascending,
-        string? filterBy,
-        string? filter,
-        CancellationToken ct = default);
+        int pageSize);
 
-    /// <summary>Retorna false quando o ISBN ja existe.</summary>
-    Task<bool> InsertAsync(Book book, CancellationToken ct = default);
+    IQueryable<Book> QueryFilteredTitle(string title);
+    IQueryable<Book> QueryFilteredAuthor(string author);
+    IQueryable<Book> QueryFilteredRating(string ratingStr);
+    IQueryable<Book> QueryUnFiltered();
+    
+    Task<bool> InsertAsync(Book book);
 
-    /// <summary>Retorna false quando o ISBN nao existe.</summary>
-    Task<bool> UpdatePagesReadAsync(string isbn, int pagesRead, CancellationToken ct = default);
+    Task<bool> UpdatePagesReadAsync(string isbn, ushort pagesRead);
 
-    /// <summary>Retorna false quando o ISBN nao existe.</summary>
-    Task<bool> UpdateRatingAsync(string isbn, decimal rating, CancellationToken ct = default);
+    Task<bool> UpdateRatingAsync(string isbn, decimal rating);
 
-    /// <summary>Retorna false quando o ISBN nao existe.</summary>
-    Task<bool> UpdateReviewAsync(string isbn, string? review, CancellationToken ct = default);
+    Task<bool> UpdateReviewAsync(string isbn, string? review);
 }

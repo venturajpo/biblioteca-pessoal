@@ -9,13 +9,14 @@ USE biblioteca_pessoal;
 -- Linha 1: completa. Todas as nove colunas preenchidas.
 -- Serve para testar a leitura do caso "tudo presente".
 -- ---------------------------------------------------------------------------
-INSERT INTO livro
-    (isbn, nome, sinopse, imagem, data_cadastro, paginas_total, paginas_lidas, nota, anotacao)
+INSERT INTO book
+    (isbn, title, author, synopsis, cover, register_date, pages_total, pages_read, rating, review)
 VALUES
     ('9788535902778',
      'Dom Casmurro',
+     '',
      'Bentinho relembra a juventude e o casamento com Capitu, remoendo a suspeita de uma traicao que nunca se confirma.',
-     'https://books.google.com/books/content?id=exemplo1&printsec=frontcover',
+     null,
      '2026-09-01',
      256,
      120,
@@ -29,13 +30,14 @@ VALUES
 -- e nao tem DEFAULT, o banco grava NULL nas duas.
 -- Serve para testar o caminho "coluna nula" na leitura (IsDBNull).
 -- ---------------------------------------------------------------------------
-INSERT INTO livro
-    (isbn, nome, sinopse, imagem, data_cadastro, paginas_total, paginas_lidas)
+INSERT INTO book
+(isbn, title, author, synopsis, cover, register_date, pages_total, pages_read)
 VALUES
     ('9788533613379',
      'O Senhor dos Aneis: A Sociedade do Anel',
+     '',
      'Frodo herda um anel magico e parte de sua terra natal para destrui-lo antes que caia nas maos do inimigo.',
-     'https://books.google.com/books/content?id=exemplo2&printsec=frontcover',
+     null,
      '2026-09-10',
      576,
      40);
@@ -47,8 +49,8 @@ VALUES
 -- que a Google Books devolveu sem o campo pageCount.
 -- Serve para testar o Progresso com divisao por zero e com nulo.
 -- ---------------------------------------------------------------------------
-INSERT INTO livro
-    (isbn, nome, sinopse, imagem, data_cadastro, paginas_total)
+INSERT INTO book
+    (isbn, title, synopsis, cover, register_date, pages_total)
 VALUES
     ('9788575225103',
      'Estruturas de Dados e Algoritmos',
@@ -60,9 +62,9 @@ VALUES
 -- ---------------------------------------------------------------------------
 -- Conferencia
 -- ---------------------------------------------------------------------------
-SELECT isbn, nome, paginas_total, paginas_lidas, nota FROM livro;
+SELECT isbn, title, pages_total, pages_read, rating FROM book;
 
 -- O esperado:
---   linha 1 -> paginas_lidas = 120, nota = 9.5
---   linha 2 -> nota e anotacao em NULL
---   linha 3 -> paginas_lidas = 0 (veio do DEFAULT), paginas_total em NULL
+--   linha 1 -> pages_read = 120, rating = 9.5
+--   linha 2 -> rating e review em NULL
+--   linha 3 -> pages_read = 0 (veio do DEFAULT), pages_total em NULL
