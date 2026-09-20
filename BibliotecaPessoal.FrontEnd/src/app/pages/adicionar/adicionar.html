@@ -1,0 +1,77 @@
+<h1>Adicionar livro</h1>
+
+@if (added(); as book) {
+  <section aria-labelledby="ok-titulo">
+    <h2 #successTitle id="ok-titulo" tabindex="-1" class="ok-title">Livro adicionado!</h2>
+
+    <div class="result">
+      <div class="cover">
+        @if (book.image && !coverFailed()) {
+          <img [ngSrc]="book.image" width="128" height="192" alt="" (error)="coverFailed.set(true)" />
+        } @else {
+          <span class="placeholder" aria-hidden="true">{{ book.title }}</span>
+        }
+      </div>
+
+      <div class="details">
+        <p class="book-title">{{ book.title }}</p>
+        <p class="book-author">{{ book.author ?? 'Autor desconhecido' }}</p>
+        @if (book.pages_total) {
+          <p class="book-author">{{ book.pages_total }} páginas</p>
+        }
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" [routerLink]="['/livro', book.isbn]">Ver detalhes</a>
+      <button type="button" class="btn secondary" (click)="addAnother()">
+        Adicionar outro livro
+      </button>
+      <a class="btn secondary" routerLink="/">Voltar para a biblioteca</a>
+    </div>
+  </section>
+} @else {
+  <form class="form" (submit)="onSubmit($event)" novalidate>
+    <div class="field">
+      <label for="isbn">ISBN</label>
+      <input
+        #isbnInput
+        id="isbn"
+        name="isbn"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        [value]="isbn()"
+        (input)="onInput(isbnInput.value)"
+        [attr.aria-invalid]="validationError() ? 'true' : null"
+        [attr.aria-describedby]="validationError() ? 'isbn-dica isbn-erro' : 'isbn-dica'"
+      />
+      <p id="isbn-dica" class="hint">
+        Fica na contracapa, perto do código de barras. Aceita 10 ou 13 dígitos, com ou sem hífens.
+      </p>
+      @if (validationError(); as message) {
+        <p id="isbn-erro" class="field-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn" [disabled]="submitting()">
+        {{ submitting() ? 'Adicionando…' : 'Adicionar' }}
+      </button>
+      <a class="btn secondary" routerLink="/">Cancelar</a>
+    </div>
+
+    @if (submitting()) {
+      <p class="hint" role="status">Buscando o livro na Google Books…</p>
+    }
+
+    @if (problem(); as p) {
+      <div class="alert error" role="alert">
+        <p class="alert-text">{{ p.message }}</p>
+        @if (p.existingIsbn) {
+          <a [routerLink]="['/livro', p.existingIsbn]">Ver detalhes do livro</a>
+        }
+      </div>
+    }
+  </form>
+}

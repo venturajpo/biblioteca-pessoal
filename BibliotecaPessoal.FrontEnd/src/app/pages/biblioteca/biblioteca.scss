@@ -1,0 +1,145 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  .field:first-child {
+    flex: 1 1 16rem;
+  }
+}
+
+.status {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+
+  &:hover {
+    border-color: var(--primary);
+  }
+
+  &:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+.cover {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: var(--surface-2);
+
+  img {
+    object-fit: cover;
+  }
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.6em;
+
+  a {
+    color: var(--text);
+    text-decoration: none;
+
+    // Faz o card inteiro ser clicavel, mantendo um unico link para leitores de tela.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
+.author {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.progress {
+  height: 6px;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.bar {
+  height: 100%;
+  background: var(--primary);
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
