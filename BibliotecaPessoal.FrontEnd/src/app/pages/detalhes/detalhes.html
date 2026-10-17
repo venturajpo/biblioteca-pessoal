@@ -2,19 +2,24 @@
 
 @if (book(); as b) {
   <article class="detail">
-    <div class="cover">
-      @if (b.image && !coverFailed()) {
-        <img
-          [ngSrc]="b.image"
-          width="200"
-          height="300"
-          priority
-          alt=""
-          (error)="coverFailed.set(true)"
-        />
-      } @else {
-        <span class="placeholder" aria-hidden="true">{{ b.title }}</span>
-      }
+    <div class="aside">
+      <div class="cover">
+        @if (b.image && !coverFailed()) {
+          <img
+            [src]="b.image"
+            width="200"
+            height="300"
+            alt=""
+            (error)="coverFailed.set(true)"
+          />
+        } @else {
+          <span class="placeholder" aria-hidden="true">{{ b.title }}</span>
+        }
+      </div>
+
+      <button type="button" class="btn secondary danger delete" (click)="openDelete()">
+        Excluir livro
+      </button>
     </div>
 
     <div class="content">
@@ -23,6 +28,14 @@
         <p class="author">{{ b.author ?? 'Autor desconhecido' }}</p>
         <p class="isbn">ISBN {{ b.isbn }}</p>
       </header>
+
+      <!-- Sinopse -->
+      @if (synopsis()) {
+        <section class="panel" aria-labelledby="sinopse-titulo">
+          <h2 id="sinopse-titulo">Sinopse</h2>
+          <p class="synopsis">{{ synopsis() }}</p>
+        </section>
+      }
 
       <!-- Progresso -->
       <section class="panel" aria-labelledby="progresso-titulo">
@@ -149,16 +162,54 @@
           {{ reviewState().message }}
         </p>
       </section>
-
-      <!-- Sinopse -->
-      @if (synopsis()) {
-        <section class="panel" aria-labelledby="sinopse-titulo">
-          <h2 id="sinopse-titulo">Sinopse</h2>
-          <p class="synopsis">{{ synopsis() }}</p>
-        </section>
-      }
     </div>
   </article>
+
+  <dialog
+    #deleteDialog
+    class="confirm"
+    aria-labelledby="excluir-titulo"
+    aria-describedby="excluir-texto"
+  >
+    <form (submit)="confirmDelete($event)" novalidate>
+      <h2 id="excluir-titulo">Excluir “{{ b.title }}”?</h2>
+      <p id="excluir-texto">
+        O livro sai da sua biblioteca junto com o progresso, a nota e as anotações. Não dá para
+        desfazer.
+      </p>
+
+      <div class="field">
+        <label for="excluir-confirmacao">
+          Para confirmar, digite <strong>{{ deleteWord }}</strong>
+        </label>
+        <input
+          #dc
+          id="excluir-confirmacao"
+          type="text"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          [value]="deleteConfirm()"
+          (input)="onDeleteInput(dc.value)"
+          aria-describedby="excluir-status"
+        />
+      </div>
+
+      <p
+        id="excluir-status"
+        class="save-status"
+        role="status"
+        [class.error]="deleteState().status === 'error'"
+      >
+        {{ deleteState().message }}
+      </p>
+
+      <div class="row actions">
+        <button type="button" class="btn secondary" (click)="closeDelete()">Cancelar</button>
+        <button type="submit" class="btn danger" [disabled]="!canDelete()">Excluir livro</button>
+      </div>
+    </form>
+  </dialog>
 } @else if (resource.error()) {
   <div class="alert error" role="alert">
     @if (notFound()) {

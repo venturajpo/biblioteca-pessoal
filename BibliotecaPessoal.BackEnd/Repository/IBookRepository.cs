@@ -23,4 +23,6 @@ public interface IBookRepository
     Task<bool> UpdateRatingAsync(string isbn, decimal rating);
 
     Task<bool> UpdateReviewAsync(string isbn, string? review);
+
+    Task<bool> DeleteAsync(string isbn);
 }

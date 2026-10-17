@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { Book } from '../../core/book';
 import { Detalhes } from './detalhes';
@@ -36,6 +36,14 @@ describe('Detalhes', () => {
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
+
+    // O jsdom nao implementa showModal/close do <dialog>.
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+      this.open = false;
+    };
   });
 
   function setValue(el: HTMLElement, selector: string, value: string): void {
@@ -94,5 +102,52 @@ describe('Detalhes', () => {
     const req = http.expectOne(`/api/UpdateRating/${ISBN}`);
     expect(req.request.body).toEqual({ rating: 8.5 });
     req.flush(null);
+  });
+
+  it('should only delete after typing EXCLUIR and then go back to the library', async () => {
+    const { el, done } = await load();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    (el.querySelector('.delete') as HTMLButtonElement).click();
+    await done();
+    const dialog = el.querySelector('dialog') as HTMLDialogElement;
+    const confirm = dialog.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(dialog.open).toBe(true);
+    expect(confirm.disabled).toBe(true);
+
+    // Minusculas nao valem, e enviar o formulario assim nao chama a API.
+    setValue(el, '#excluir-confirmacao', 'excluir');
+    await done();
+    expect(confirm.disabled).toBe(true);
+    dialog.querySelector('form')?.dispatchEvent(new Event('submit'));
+    http.expectNone((r) => r.method === 'DELETE');
+
+    setValue(el, '#excluir-confirmacao', 'EXCLUIR');
+    await done();
+    expect(confirm.disabled).toBe(false);
+
+    dialog.querySelector('form')?.dispatchEvent(new Event('submit'));
+    const req = http.expectOne((r) => r.method === 'DELETE' && r.url === `/api/Book/${ISBN}`);
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    await done();
+
+    expect(dialog.open).toBe(false);
+    expect(navigate).toHaveBeenCalledWith(['/']);
+  });
+
+  it('should keep the dialog open and show the error when the delete fails', async () => {
+    const { el, done } = await load();
+
+    (el.querySelector('.delete') as HTMLButtonElement).click();
+    setValue(el, '#excluir-confirmacao', 'EXCLUIR');
+    await done();
+    el.querySelector('dialog form')?.dispatchEvent(new Event('submit'));
+    http
+      .expectOne((r) => r.method === 'DELETE')
+      .flush('erro', { status: 500, statusText: 'Server Error' });
+    await done();
+
+    expect((el.querySelector('dialog') as HTMLDialogElement).open).toBe(true);
+    expect(el.querySelector('#excluir-status')?.textContent).toContain('Não foi possível excluir');
   });
 });

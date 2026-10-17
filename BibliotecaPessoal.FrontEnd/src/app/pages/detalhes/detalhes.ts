@@ -1,18 +1,19 @@
-import { NgOptimizedImage } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
   DestroyRef,
+  ElementRef,
   WritableSignal,
   computed,
   effect,
   inject,
   linkedSignal,
   signal,
+  viewChild,
 } from '@angular/core';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { BookApi } from '../../core/book-api';
 
@@ -25,6 +26,9 @@ const IDLE: SaveState = { status: 'idle', message: '' };
 
 // Limite da coluna paginas_lidas (SMALLINT UNSIGNED).
 const MAX_PAGES = 65535;
+
+/** Palavra que precisa ser digitada para confirmar a exclusao. */
+const DELETE_WORD = 'EXCLUIR';
 
 // O erro de um resource pode chegar embrulhado (com o original em `cause`),
 // entao olhamos nos dois lugares.
@@ -57,13 +61,14 @@ function percentOf(pagesRead: number, pagesTotal: number | null): number {
 
 @Component({
   selector: 'app-detalhes',
-  imports: [RouterLink, NgOptimizedImage],
+  imports: [RouterLink],
   templateUrl: './detalhes.html',
   styleUrl: './detalhes.scss',
 })
 export class Detalhes {
   private readonly api = inject(BookApi);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly pageTitle = inject(Title);
 
@@ -115,6 +120,14 @@ export class Detalhes {
   protected readonly progressState = signal<SaveState>(IDLE);
   protected readonly ratingState = signal<SaveState>(IDLE);
   protected readonly reviewState = signal<SaveState>(IDLE);
+
+  protected readonly deleteWord = DELETE_WORD;
+  protected readonly deleteConfirm = signal('');
+  protected readonly deleteState = signal<SaveState>(IDLE);
+  protected readonly canDelete = computed(
+    () => this.deleteConfirm().trim() === DELETE_WORD && this.deleteState().status !== 'saving',
+  );
+  private readonly deleteDialog = viewChild<ElementRef<HTMLDialogElement>>('deleteDialog');
 
   constructor() {
     effect(() => {
@@ -215,6 +228,51 @@ export class Detalhes {
     this.save(this.reviewState, this.api.updateReview(book.isbn, review), 'Anotação salva.', () =>
       this.book.update((current) => current && { ...current, review }),
     );
+  }
+
+  // ---- Exclusao -----------------------------------------------------------
+
+  // O <dialog> nativo (showModal) prende o foco, fecha com Esc e devolve o foco ao
+  // botao que o abriu.
+  protected openDelete(): void {
+    this.deleteConfirm.set('');
+    this.deleteState.set(IDLE);
+    this.deleteDialog()?.nativeElement.showModal();
+  }
+
+  protected closeDelete(): void {
+    this.deleteDialog()?.nativeElement.close();
+  }
+
+  protected onDeleteInput(value: string): void {
+    this.deleteConfirm.set(value);
+    if (this.deleteState().status === 'error') this.deleteState.set(IDLE);
+  }
+
+  protected confirmDelete(event: Event): void {
+    event.preventDefault();
+    const book = this.book();
+    if (!book || !this.canDelete()) return;
+
+    this.deleteState.set({ status: 'saving', message: 'Excluindo…' });
+
+    this.api
+      .remove(book.isbn)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.closeDelete();
+          void this.router.navigate(['/']);
+        },
+        error: (err: unknown) => {
+          const status = statusOf(err);
+          const message =
+            status === 404 || status === 0
+              ? this.errorMessage(err)
+              : 'Não foi possível excluir o livro. Tente de novo.';
+          this.deleteState.set({ status: 'error', message });
+        },
+      });
   }
 
   // ---- Apoio --------------------------------------------------------------

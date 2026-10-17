@@ -24,12 +24,12 @@ public class MySqlBookRepository(ApplicationDbContext dbContext) : IBookReposito
 
     public IQueryable<Book> QueryFilteredTitle(string title)
     {
-        return _books.Where(b => b.Title == title);
+        return _books.Where(b => b.Title.Contains(title));
     }
 
     public IQueryable<Book> QueryFilteredAuthor(string author)
     {
-        return _books.Where(b => b.Author == author);
+        return _books.Where(b => b.Author.Contains(author));
     }
     
     public IQueryable<Book> QueryFilteredRating(string ratingStr)
@@ -95,6 +95,19 @@ public class MySqlBookRepository(ApplicationDbContext dbContext) : IBookReposito
         {
             return await _books.Where(b => b.Isbn == isbn)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(b => b.Review, review)) > 0;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteAsync(string isbn)
+    {
+        try
+        {
+            return await _books.Where(b => b.Isbn == isbn).ExecuteDeleteAsync() > 0;
         }
         catch (Exception e)
         {

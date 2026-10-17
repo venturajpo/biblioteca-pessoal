@@ -17,6 +17,8 @@
     build:
       context: .
       dockerfile: BibliotecaPessoal.BackEnd/Dockerfile
+    environment:
+      GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY}
     networks:
       - app_network
     depends_on:

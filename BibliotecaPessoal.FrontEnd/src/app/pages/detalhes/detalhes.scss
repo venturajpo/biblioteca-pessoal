@@ -18,8 +18,16 @@
   align-items: flex-start;
 }
 
-.cover {
+// Coluna da capa, com o botao de excluir logo abaixo.
+.aside {
+  display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 200px;
+}
+
+.cover {
   width: 200px;
   height: 300px;
   overflow: hidden;
@@ -140,4 +148,37 @@ input[aria-invalid='true'] {
 .synopsis {
   margin: 0;
   white-space: pre-line;
+}
+
+.confirm {
+  width: min(28rem, calc(100% - 2rem));
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 50%);
+
+  &::backdrop {
+    background: rgb(0 0 0 / 60%);
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
 }
