@@ -10,6 +10,7 @@
      - app_network
    volumes:
      - ./BibliotecaPessoal.BackEnd/DBScript:/docker-entrypoint-initdb.d
+#     - ./db:/var/lib/mysql
   bibliotecapessoal.backend:
     image: bibliotecapessoal.backend
     ports:
