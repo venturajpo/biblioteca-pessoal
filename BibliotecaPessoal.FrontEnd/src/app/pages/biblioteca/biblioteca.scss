@@ -9,6 +9,25 @@
   }
 }
 
+// Seletor do campo (titulo ou autor) colado a esquerda do texto, como na tela de adicionar.
+.bar {
+  display: flex;
+
+  select {
+    flex: none;
+    border-radius: var(--radius) 0 0 var(--radius);
+    background: var(--surface-2);
+    cursor: pointer;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    margin-left: -1px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+}
+
 .status {
   margin: 0 0 1rem;
   color: var(--muted);
@@ -57,7 +76,13 @@
   aspect-ratio: 2 / 3;
   background: var(--surface-2);
 
+  // A capa e um data URL (base64), que o NgOptimizedImage nao aceita; por isso o
+  // preenchimento que o atributo `fill` fazia fica aqui.
   img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
   }
 }

@@ -1,23 +1,23 @@
+using BibliotecaPessoal.BackEnd.Catalog;
 using BibliotecaPessoal.BackEnd.DTO;
 using BibliotecaPessoal.BackEnd.Entity;
 using BibliotecaPessoal.BackEnd.Repository;
 using Microsoft.AspNetCore.Mvc;
-using Google;
-using Google.Apis.Books.v1;
-using Google.Apis.Books.v1.Data;
 
 namespace BibliotecaPessoal.BackEnd.Route;
 
 [ApiController]
 [Route("[controller]")]
 public class BookController(
-    BooksService booksService,
+    IBookCatalog catalog,
     IBookRepository bookRepository,
     ILogger<BookController> logger) : Controller
 {
-    private readonly BooksService _booksService = booksService;
+    private readonly IBookCatalog _catalog = catalog;
     private readonly IBookRepository _bookRepository = bookRepository;
     private readonly ILogger<BookController> _logger = logger;
+
+    private const int SearchLimit = 10;
 
     [HttpGet]
     public async Task<IActionResult> GetBook(
@@ -64,6 +64,8 @@ public class BookController(
                     "progress" => query.OrderBy(b =>
                         (b.PagesTotal == 0 || b.PagesTotal == null) ? 0 : (double)b.PagesRead / b.PagesTotal),
                     "rating" => query.OrderBy(b => b.Rating ?? 0),
+                    "registered_at" => query.OrderBy(b => b.RegisteredDate),
+                    "pages_read" => query.OrderBy(b => b.PagesRead),
                     _ => throw new ArgumentException($"Sort field {sortByStr} is not supported.")
                 };
             }
@@ -76,6 +78,8 @@ public class BookController(
                     "progress" => query.OrderByDescending(b =>
                         (b.PagesTotal == 0 || b.PagesTotal == null) ? 100.0 : (double)b.PagesRead / b.PagesTotal),
                     "rating" => query.OrderByDescending(b => b.Rating ?? 10.0m),
+                    "registered_at" => query.OrderByDescending(b => b.RegisteredDate),
+                    "pages_read" => query.OrderByDescending(b => b.PagesRead),
                     _ => throw new ArgumentException($"Sort field {sortByStr} is not supported.")
                 };
             }  
@@ -109,74 +113,99 @@ public class BookController(
         return book is null ? NotFound() : Ok(ToDto(book, true));
     }
 
-    [HttpPost]
-    public async Task<IActionResult> PostBook([FromBody] BookRegisterDto request)
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchBooks(
+        [FromQuery(Name = "filter_by")] string? filterByStr = null,
+        [FromQuery(Name = "filter")] string? filterStr = null,
+        CancellationToken ct = default)
     {
-        var isbn = NormalizeIsbn(request.ISBN);
+        if (filterByStr is null || string.IsNullOrWhiteSpace(filterStr))
+        {
+            return BadRequest("Filter and Filter fields must be specified.");
+        }
 
-        // Clean up input (remove dashes or spaces often found in ISBNs)
-        isbn = isbn.Replace("-", "").Replace(" ", "");
+        CatalogSearchField? field = filterByStr switch
+        {
+            "isbn" => CatalogSearchField.Isbn,
+            "title" => CatalogSearchField.Title,
+            "author" => CatalogSearchField.Author,
+            _ => null
+        };
+
+        if (field is null)
+        {
+            return BadRequest($"Filter field {filterByStr} is not supported.");
+        }
+
+        var terms = field == CatalogSearchField.Isbn ? NormalizeIsbn(filterStr.Trim()) : filterStr.Trim();
 
         try
         {
-            string query = $"isbn:{isbn}";
+            var found = await _catalog.SearchAsync(field.Value, terms, SearchLimit, ct);
 
-            var listRequest = _booksService.Volumes.List(query);
-            listRequest.MaxResults = 1;
-
-            var response = await listRequest.ExecuteAsync();
-
-            if (response.Items == null || response.Items.Count == 0)
+            return Ok(new BookSearchResponse
             {
-                return UnprocessableEntity($"No book found with ISBN: {isbn}");
-            }
-
-            var volume = response.Items[0];
-            var info = volume.VolumeInfo;
-
-            byte[] coverArt = [];
-            
-            using (HttpClient c = new HttpClient())
-            {
-                string? url = SortImageLinks(info.ImageLinks);
-                if (url is not null)
-                    using (var r = c.GetByteArrayAsync(url))
-                    {
-                        coverArt = r.Result;
-                    }
-            }
-
-            Book book = new Book
-            {
-                Isbn = info.IndustryIdentifiers.OrderBy(i => SortIdentifier(i.Type)).First().Identifier,
-                Title = info.Title,
-                Author = string.Join(", ", info.Authors),
-                Synopsis = info.Description,
-                Cover = coverArt,
-                RegisteredDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                PagesTotal = (ushort)info.PageCount,
-                PagesRead = 0,
-                Rating = null,
-                Review = null,
-            };
-
-
-            return await _bookRepository.InsertAsync(book)
-                ? Ok(ToDto(book, false))
-                : Conflict($"Book with ISBN {isbn} is already registered.");
+                Books = [.. found.Select(b => new BookSearchResultDto
+                {
+                    Isbn = b.Isbn,
+                    Title = b.Title,
+                    Author = b.Author,
+                    Image = ToBase64(b.Cover),
+                })],
+            });
         }
-        catch (GoogleApiException e)
+        catch (CatalogUnavailableException e)
         {
-            // Falha da API externa nao deve derrubar a requisicao: 502 comunica que o
-            // problema esta a jusante, e o detail carrega a mensagem da Google (chave
-            // ausente, chave invalida, API nao habilitada no projeto, cota estourada).
-            _logger.LogError(e, "Falha ao consultar a Google Books API para o ISBN {Isbn}", isbn);
-
-            return Problem(
-                title: "Could not reach the Google Books API.",
-                detail: e.Message,
-                statusCode: StatusCodes.Status502BadGateway);
+            _logger.LogError(e, "Nenhum catalogo respondeu a busca por {Field} {Terms}", field, terms);
+            return CatalogsUnavailable(e);
         }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> PostBook(
+        [FromBody] BookRegisterDto request,
+        CancellationToken ct = default)
+    {
+        var isbn = NormalizeIsbn(request.ISBN);
+
+        if (await _bookRepository.GetByIsbnAsync(isbn) is not null)
+        {
+            return Conflict($"Book with ISBN {isbn} is already registered.");
+        }
+
+        CatalogBook? found;
+        try
+        {
+            found = await _catalog.FindByIsbnAsync(isbn, ct);
+        }
+        catch (CatalogUnavailableException e)
+        {
+            _logger.LogError(e, "Nenhum catalogo respondeu para o ISBN {Isbn}", isbn);
+            return CatalogsUnavailable(e);
+        }
+
+        if (found is null)
+        {
+            return UnprocessableEntity($"No book found with ISBN: {isbn}");
+        }
+
+        Book book = new Book
+        {
+            Isbn = found.Isbn,
+            Title = found.Title,
+            Author = found.Author ?? string.Empty,
+            Synopsis = found.Synopsis ?? string.Empty,
+            Cover = found.Cover,
+            RegisteredDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            PagesTotal = found.PageCount,
+            PagesRead = 0,
+            Rating = null,
+            Review = null,
+        };
+
+        return await _bookRepository.InsertAsync(book)
+            ? Ok(ToDto(book, false))
+            : Conflict($"Book with ISBN {book.Isbn} is already registered.");
     }
 
     [HttpPost("~/UpdateProgress/{isbn}")]
@@ -227,39 +256,32 @@ public class BookController(
             : NotFound();
     }
 
-    // O POST grava o ISBN normalizado, entao toda leitura precisa normalizar tambem,
-    // senao "978-85-..." nunca casa com a chave primaria.
+    [HttpDelete("{isbn}")]
+    public async Task<IActionResult> DeleteBook(string isbn)
+    {
+        return await _bookRepository.DeleteAsync(NormalizeIsbn(isbn))
+            ? NoContent()
+            : NotFound();
+    }
+
     private static string NormalizeIsbn(string isbn) =>
         isbn.Replace("-", string.Empty).Replace(" ", string.Empty);
 
-    private static int SortIdentifier(string identifier)
-    {
-        return identifier switch
-        {
-            "ISBN_13" => 0,
-            "ISBN_10" => 2,
-            "ISSN" => 4,
-            _ => int.MaxValue
-        };
-    }
+    private ObjectResult CatalogsUnavailable(CatalogUnavailableException e) => Problem(
+        title: "Could not reach the book catalogs.",
+        detail: e.InnerException is AggregateException all
+            ? string.Join(" | ", all.InnerExceptions.Select(x => x.Message))
+            : e.Message,
+        statusCode: StatusCodes.Status502BadGateway);
 
-    private static string? SortImageLinks(Volume.VolumeInfoData.ImageLinksData images)
-    {
-        return images.ExtraLarge
-                          ?? images?.Large
-                          ?? images?.Medium
-                          ?? images?.Thumbnail
-                          ?? images?.SmallThumbnail
-                          ?? null;
-    }
-    
-    
+    private static string? ToBase64(byte[]? cover) =>
+        cover is { Length: > 0 } ? Convert.ToBase64String(cover) : null;
     private static BookDto ToDto(Book book, bool getFull) => new()
     {
         Isbn = book.Isbn,
         Title = book.Title,
         Author = book.Author,
-        Image = (getFull && book.Cover != null) ? Convert.ToBase64String(book.Cover) : null,
+        Image = ToBase64(book.Cover),
         Progress = book.Progress,
         PagesRead = book.PagesRead,
         PagesTotal = book.PagesTotal,

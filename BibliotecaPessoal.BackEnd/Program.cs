@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BibliotecaPessoal.BackEnd;
 
+using BibliotecaPessoal.BackEnd.Catalog;
 using BibliotecaPessoal.BackEnd.Repository;
 using Google.Apis.Books.v1;
+using Google.Apis.Http;
 using Google.Apis.Services;
 
 public class Program
@@ -26,15 +28,34 @@ public class Program
         builder.Services.AddOpenApi();
 
         // Register Google Books API
-        builder.Services.AddSingleton<BooksService>(new BooksService(new BaseClientService.Initializer()
+        var booksService = new BooksService(new BaseClientService.Initializer()
         {
             ApiKey = builder.Configuration["GoogleBooks:ApiKey"],
-            ApplicationName = "BibliotecaPessoal"
-        }));
+            ApplicationName = "BibliotecaPessoal",
+            DefaultExponentialBackOffPolicy = ExponentialBackOffPolicy.None,
+        });
+        booksService.HttpClient.Timeout = TimeSpan.FromSeconds(10);
+        builder.Services.AddSingleton(booksService);
 
-        // Scoped: uma instancia por requisicao. O repositorio hoje e sem estado, mas
-        // Singleton passaria a compartilhar estado entre usuarios no dia em que houver
-        // uma transacao aqui dentro.
+        var contact = builder.Configuration["OpenLibrary:Contact"];
+        var userAgent = string.IsNullOrWhiteSpace(contact)
+            ? "BibliotecaPessoal/1.0"
+            : $"BibliotecaPessoal/1.0 ({contact})";
+
+        builder.Services.AddHttpClient<GoogleBooksCatalog>(client =>
+            client.Timeout = TimeSpan.FromSeconds(10));
+        builder.Services.AddHttpClient<OpenLibraryCatalog>(client =>
+        {
+            client.BaseAddress = new Uri("https://openlibrary.org/");
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+        });
+
+
+        builder.Services.AddScoped<IBookCatalog>(services => new FallbackBookCatalog(
+            [services.GetRequiredService<OpenLibraryCatalog>(), services.GetRequiredService<GoogleBooksCatalog>()],
+            services.GetRequiredService<ILogger<FallbackBookCatalog>>()));
+
         builder.Services.AddScoped<IBookRepository, MySqlBookRepository>();
 
         var app = builder.Build();

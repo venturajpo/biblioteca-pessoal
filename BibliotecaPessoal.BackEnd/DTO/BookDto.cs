@@ -15,6 +15,27 @@ public class BookListResponse
     public List<BookDto> Books { get; set; } = [];
 }
 
+public class BookSearchResponse
+{
+    [JsonPropertyName("books")]
+    public List<BookSearchResultDto> Books { get; set; } = [];
+}
+
+public class BookSearchResultDto
+{
+    [JsonPropertyName("isbn")]
+    public string Isbn { get; set; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("author")]
+    public string? Author { get; set; }
+
+    [JsonPropertyName("image")]
+    public string? Image { get; set; }
+}
+
 public class BookDto
 {
     [JsonPropertyName("isbn")]

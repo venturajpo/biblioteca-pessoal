@@ -2,15 +2,25 @@
 
 <div class="controls">
   <div class="field">
-    <label for="busca">Buscar por título</label>
-    <input
-      #q
-      id="busca"
-      type="search"
-      placeholder="O que está procurando?"
-      [value]="search()"
-      (input)="onSearch(q.value)"
-    />
+    <label for="busca">Buscar</label>
+    <div class="bar">
+      <label for="busca-tipo" class="visually-hidden">Buscar por</label>
+      <select #t id="busca-tipo" (change)="onFilterBy(t.value)">
+        @for (option of filterOptions; track option.value) {
+          <option [value]="option.value" [selected]="option.value === filterBy()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+      <input
+        #q
+        id="busca"
+        type="search"
+        [placeholder]="filterPlaceholder()"
+        [value]="search()"
+        (input)="onSearch(q.value)"
+      />
+    </div>
   </div>
 
   <div class="field">
@@ -36,7 +46,10 @@
   @if (result.books.length === 0) {
     <div class="empty" role="status">
       @if (filter()) {
-        <p>Nenhum livro encontrado para “{{ filter() }}”.</p>
+        <p>
+          Nenhum livro encontrado com {{ filterBy() === 'author' ? 'autor' : 'título' }}
+          “{{ filter() }}”.
+        </p>
       } @else {
         <p>Sua biblioteca está vazia.</p>
         <a routerLink="/adicionar" class="btn">Adicionar o primeiro livro</a>
@@ -52,7 +65,7 @@
         <li class="card">
           <div class="cover">
             @if (book.image && !failedCovers().has(book.isbn)) {
-              <img [ngSrc]="book.image" fill alt="" (error)="onCoverError(book.isbn)" />
+              <img [src]="book.image" alt="" (error)="onCoverError(book.isbn)" />
             } @else {
               <span class="placeholder" aria-hidden="true">{{ book.title }}</span>
             }

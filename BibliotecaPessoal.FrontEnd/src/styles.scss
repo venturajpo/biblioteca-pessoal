@@ -9,6 +9,7 @@
   --primary-contrast: #1a1033;
   --border: #363b47;
   --danger: #ff9b91;
+  --danger-contrast: #2b0a06;
   --success: #6ee7a0;
   --focus: #7dd3fc;
   --radius: 8px;
@@ -74,6 +75,18 @@ a {
   &.secondary {
     background: var(--surface);
     color: var(--primary);
+  }
+
+  // Acoes destrutivas. Com .secondary vira a versao contornada, menos chamativa.
+  &.danger {
+    border-color: var(--danger);
+    background: var(--danger);
+    color: var(--danger-contrast);
+  }
+
+  &.secondary.danger {
+    background: var(--surface);
+    color: var(--danger);
   }
 }
 

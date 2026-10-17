@@ -1,4 +1,3 @@
-import { NgOptimizedImage } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
@@ -12,8 +11,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { Book } from '../../core/book';
+import { Book, BookSearchResult } from '../../core/book';
 import { BookApi } from '../../core/book-api';
+import { Busca } from './busca';
 
 interface Problem {
   message: string;
@@ -21,14 +21,9 @@ interface Problem {
   existingIsbn?: string;
 }
 
-// 13 digitos, ou 9 digitos + (digito ou X) no ISBN-10.
-const ISBN_PATTERN = /^(\d{13}|\d{9}[\dX])$/;
-
-const normalizeIsbn = (value: string): string => value.replace(/[-\s]/g, '').toUpperCase();
-
 @Component({
   selector: 'app-adicionar',
-  imports: [RouterLink, NgOptimizedImage],
+  imports: [RouterLink, Busca],
   templateUrl: './adicionar.html',
   styleUrl: './adicionar.scss',
 })
@@ -37,70 +32,46 @@ export class Adicionar {
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
-  protected readonly isbn = signal('');
-  protected readonly submitting = signal(false);
-  /** Erro de validacao do campo (mostrado abaixo do input). */
-  protected readonly validationError = signal<string | null>(null);
+  /** Livro escolhido na busca cujo cadastro esta em andamento. */
+  protected readonly adding = signal<BookSearchResult | null>(null);
   /** Erro devolvido pelo servidor (mostrado como alerta). */
   protected readonly problem = signal<Problem | null>(null);
   protected readonly added = signal<Book | null>(null);
   protected readonly coverFailed = signal(false);
 
-  private readonly isbnInput = viewChild<ElementRef<HTMLInputElement>>('isbnInput');
+  private readonly search = viewChild(Busca);
   private readonly successTitle = viewChild<ElementRef<HTMLElement>>('successTitle');
 
-  protected onInput(value: string): void {
-    this.isbn.set(value);
-    this.validationError.set(null);
-    this.problem.set(null);
-  }
-
-  protected onSubmit(event: Event): void {
-    event.preventDefault();
-    if (this.submitting()) return;
-
-    const isbn = normalizeIsbn(this.isbn());
-    const invalid = this.validate(isbn);
-    if (invalid) {
-      this.validationError.set(invalid);
-      this.isbnInput()?.nativeElement.focus();
-      return;
-    }
+  protected onPick(result: BookSearchResult): void {
+    if (this.adding()) return;
 
     this.problem.set(null);
-    this.submitting.set(true);
+    this.adding.set(result);
 
     this.api
-      .add(isbn)
+      .add(result.isbn)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (book) => {
-          this.submitting.set(false);
+          this.adding.set(null);
           this.coverFailed.set(false);
-          this.added.set(book);
-          this.focusAfterRender(() => this.successTitle());
+          // O POST nao devolve a capa; a miniatura da busca serve ate abrir os detalhes.
+          this.added.set({ ...book, image: book.image ?? result.image });
+          this.focusAfterRender(() => this.successTitle()?.nativeElement);
         },
         error: (err: unknown) => {
-          this.submitting.set(false);
-          this.problem.set(this.toProblem(err, isbn));
+          this.adding.set(null);
+          this.problem.set(this.toProblem(err, result.isbn));
+          // A busca ficou desabilitada durante o cadastro e perdeu o foco.
+          this.focusAfterRender(() => this.search());
         },
       });
   }
 
   protected addAnother(): void {
     this.added.set(null);
-    this.isbn.set('');
     this.problem.set(null);
-    this.validationError.set(null);
-    this.focusAfterRender(() => this.isbnInput());
-  }
-
-  private validate(isbn: string): string | null {
-    if (!isbn) return 'Informe o ISBN do livro.';
-    if (!ISBN_PATTERN.test(isbn)) {
-      return 'O ISBN deve ter 10 ou 13 dígitos (no ISBN-10, o último pode ser X).';
-    }
-    return null;
+    this.focusAfterRender(() => this.search());
   }
 
   private toProblem(err: unknown, isbn: string): Problem {
@@ -113,11 +84,12 @@ export class Adicionar {
       case 422:
         return {
           message:
-            'Não encontramos nenhum livro com esse ISBN na Google Books. Confira os números e tente de novo.',
+            'Não encontramos nenhum livro com esse ISBN na Google Books nem na Open Library. Confira os números e tente de novo.',
         };
       case 502:
         return {
-          message: 'Não foi possível consultar a Google Books agora. Tente de novo em instantes.',
+          message:
+            'Não foi possível consultar a Google Books nem a Open Library agora. Tente de novo em instantes.',
         };
       case 0:
         return {
@@ -130,7 +102,7 @@ export class Adicionar {
 
   // O elemento so existe depois que o Angular renderiza o @if, entao o foco
   // precisa esperar a proxima renderizacao.
-  private focusAfterRender(target: () => ElementRef<HTMLElement> | undefined): void {
-    afterNextRender(() => target()?.nativeElement.focus(), { injector: this.injector });
+  private focusAfterRender(target: () => { focus(): void } | undefined): void {
+    afterNextRender(() => target()?.focus(), { injector: this.injector });
   }
 }

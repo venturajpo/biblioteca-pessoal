@@ -10,6 +10,7 @@
      - app_network
    volumes:
      - ./BibliotecaPessoal.BackEnd/DBScript:/docker-entrypoint-initdb.d
+#     - ./db:/var/lib/mysql
   bibliotecapessoal.backend:
     image: bibliotecapessoal.backend
     ports:
@@ -17,10 +18,25 @@
     build:
       context: .
       dockerfile: BibliotecaPessoal.BackEnd/Dockerfile
+    environment:
+      GoogleBooks__ApiKey: ${GOOGLE_BOOKS_API_KEY}
     networks:
       - app_network
     depends_on:
       - db
+  bibliotecapessoal.frontend:
+    image: bibliotecapessoal.frontend
+    ports:
+      - "8080:80"
+    build:
+      context: ./BibliotecaPessoal.FrontEnd
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+    networks:
+      - app_network
+    depends_on:
+      - bibliotecapessoal.backend
 networks:
   app_network:
     driver: bridge

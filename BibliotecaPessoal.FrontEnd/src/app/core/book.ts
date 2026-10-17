@@ -11,6 +11,14 @@ export interface Book {
   synopsis: string | null;
 }
 
+/** Livro encontrado num catálogo externo (tela de adicionar), ainda fora da biblioteca. */
+export interface BookSearchResult {
+  isbn: string;
+  title: string;
+  author: string | null;
+  image: string | null;
+}
+
 export interface BookList {
   count: number;
   page_count: number;

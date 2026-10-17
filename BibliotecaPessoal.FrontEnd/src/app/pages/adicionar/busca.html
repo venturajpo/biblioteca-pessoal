@@ -1,0 +1,81 @@
+<div class="search" (focusin)="reopen()" (focusout)="onFocusOut($event)">
+  <label for="busca-termo">Buscar na Open Library e na Google Books</label>
+
+  <div class="combo">
+    <div class="bar">
+      <label for="busca-tipo" class="visually-hidden">Buscar por</label>
+      <select
+        #typeSelect
+        id="busca-tipo"
+        [disabled]="disabled()"
+        (change)="onSearchByChange(typeSelect.value)"
+      >
+        @for (option of options; track option.value) {
+          <option [value]="option.value" [selected]="option.value === searchBy()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+
+      <input
+        #termInput
+        id="busca-termo"
+        type="text"
+        role="combobox"
+        autocomplete="off"
+        spellcheck="false"
+        aria-autocomplete="list"
+        aria-describedby="busca-dica"
+        [attr.aria-expanded]="expanded()"
+        [attr.aria-controls]="expanded() ? 'busca-resultados' : null"
+        [attr.aria-activedescendant]="activeId()"
+        [placeholder]="placeholder()"
+        [value]="term()"
+        [disabled]="disabled()"
+        (input)="onInput(termInput.value)"
+        (keydown)="onKeydown($event)"
+        (click)="reopen()"
+      />
+    </div>
+
+    @if (showPanel()) {
+      <div class="panel">
+        @if (results().length) {
+          <ul id="busca-resultados" role="listbox" aria-label="Livros encontrados">
+            @for (book of results(); track book.isbn; let i = $index) {
+              <li
+                role="option"
+                [id]="'busca-opcao-' + i"
+                [attr.aria-selected]="i === activeIndex()"
+                [class.active]="i === activeIndex()"
+                (mousedown)="$event.preventDefault()"
+                (mouseenter)="activeIndex.set(i)"
+                (click)="pick(book)"
+              >
+                <span class="thumb">
+                  @if (book.image) {
+                    <img [src]="book.image" alt="" width="40" height="60" />
+                  }
+                </span>
+                <span class="text">
+                  <span class="author">{{ book.author ?? 'Autor desconhecido' }}</span>
+                  <span class="title">{{ book.title }}</span>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+        @if (status() !== 'done' || !results().length) {
+          <p class="panel-message" [class.error]="status() === 'error'">{{ message() }}</p>
+        }
+      </div>
+    }
+  </div>
+
+  <p id="busca-dica" class="hint">
+    Escolha o tipo de busca. Ela começa sozinha a partir de 3 caracteres; com Enter, busca com
+    qualquer tamanho.
+  </p>
+
+  <p class="visually-hidden" role="status">{{ message() }}</p>
+</div>
