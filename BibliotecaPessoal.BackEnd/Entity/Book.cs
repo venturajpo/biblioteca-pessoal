@@ -28,4 +28,6 @@ public class Book
     public double Progress => PagesTotal is > 0
         ? Math.Round((double)PagesRead / PagesTotal.Value * 100, 2)
         : 0;
+    
+    public ICollection<LoanHistory> LoanHistories { get; set; } = [];
 }
