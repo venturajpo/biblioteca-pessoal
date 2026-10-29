@@ -14,8 +14,8 @@ public class LoanHistoryConfiguration : IEntityTypeConfiguration<LoanHistory>
 
         builder.Property(lh => lh.RA)
                .IsRequired()
-               .HasMaxLength(50); 
-               
+               .HasMaxLength(50);
+
         builder.Property(lh => lh.LoanDate)
                .IsRequired();
 
