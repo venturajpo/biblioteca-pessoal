@@ -12,7 +12,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new BookConfiguration());
-        
+        modelBuilder.ApplyConfiguration(new LoanHistoryConfiguration());
+
         base.OnModelCreating(modelBuilder);
     }
 }

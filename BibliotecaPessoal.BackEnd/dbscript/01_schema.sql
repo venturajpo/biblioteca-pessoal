@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS LoanHistory (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     BookIsbn VARCHAR(13) NOT NULL,
     RA VARCHAR(50) NOT NULL,
-    LoanDate DATETIME NOT NULL,
-    DueDate DATETIME NOT NULL,
-    ReturnDate DATETIME NULL, /* Nulo = Ainda não foi devolvido */
+    LoanDate DATE NOT NULL,
+    DueDate DATE NOT NULL,
+    ReturnDate DATE NULL, /* Nulo = Ainda não foi devolvido */
     FOREIGN KEY (BookIsbn) REFERENCES book(isbn) ON DELETE CASCADE
 );

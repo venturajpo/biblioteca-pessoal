@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { Book, BookList, BookQuery, BookSearchResult, FilterBy } from './book';
+import { Book, BookList, BookQuery, BookSearchResult, FilterBy, Loan } from './book';
 
 // O back-end manda a capa em base64 puro (e nao uma URL) para o sistema funcionar sem
 // internet. O <img> precisa de um data URL, e o tipo da imagem sai dos primeiros bytes (magic number).
@@ -75,5 +75,22 @@ export class BookApi {
 
   remove(isbn: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/Book/${encodeURIComponent(isbn)}`);
+  }
+
+  // ---- Emprestimos ----
+
+  loans(isbn: string): Observable<Loan[]> {
+    return this.http.get<Loan[]>(`${this.base}/Loan/${encodeURIComponent(isbn)}`);
+  }
+
+  lend(isbn: string, ra: string, dueDate: string): Observable<Loan> {
+    return this.http.post<Loan>(`${this.base}/Loan/${encodeURIComponent(isbn)}`, {
+      ra,
+      due_date: dueDate,
+    });
+  }
+
+  giveBack(isbn: string): Observable<Loan> {
+    return this.http.post<Loan>(`${this.base}/Loan/${encodeURIComponent(isbn)}/return`, {});
   }
 }

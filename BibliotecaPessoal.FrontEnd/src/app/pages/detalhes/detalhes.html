@@ -17,6 +17,88 @@
         }
       </div>
 
+      <!-- Emprestimo -->
+      <section class="panel loan" aria-labelledby="emprestimo-titulo">
+        @if (loansResource.error()) {
+          <h2 id="emprestimo-titulo">Empréstimo</h2>
+          <p class="save-status error" role="alert">Não foi possível carregar os empréstimos.</p>
+          <button type="button" class="btn secondary" (click)="loansResource.reload()">
+            Tentar de novo
+          </button>
+        } @else if (!loans()) {
+          <h2 id="emprestimo-titulo">Empréstimo</h2>
+          <p class="status" role="status">Carregando…</p>
+        } @else {
+          @if (openLoan(); as l) {
+            <h2 id="emprestimo-titulo">Emprestado</h2>
+            <p>
+              RA <strong>{{ l.ra }}</strong>
+            </p>
+            <p class="loan-meta">desde {{ brDate(l.loan_date) }}</p>
+            <p class="loan-meta" [class.late]="overdue()">até {{ brDate(l.due_date) }}</p>
+            @if (overdue()) {
+              <p class="late">Devolução atrasada</p>
+            }
+            <button
+              id="loan-return"
+              type="button"
+              class="btn"
+              [disabled]="loanState().status === 'saving'"
+              (click)="returnBook()"
+            >
+              Registrar devolução
+            </button>
+          } @else {
+            <h2 id="emprestimo-titulo">Disponível</h2>
+            <form id="form-emprestimo" class="loan-form" (submit)="saveLoan($event)" novalidate>
+              <div class="field">
+                <label for="loan-ra">RA</label>
+                <input
+                  #ra
+                  id="loan-ra"
+                  type="text"
+                  autocomplete="off"
+                  [attr.maxlength]="maxRa"
+                  [value]="raDraft()"
+                  (input)="onRaInput(ra.value)"
+                  [attr.aria-invalid]="loanState().status === 'error' ? 'true' : null"
+                  aria-describedby="emprestimo-status"
+                />
+              </div>
+              <div class="field">
+                <label for="loan-due">Devolver até</label>
+                <input
+                  #due
+                  id="loan-due"
+                  type="date"
+                  [min]="today"
+                  [value]="dueDraft()"
+                  (input)="onDueInput(due.value)"
+                  aria-describedby="emprestimo-status"
+                />
+              </div>
+              <button type="submit" class="btn" [disabled]="loanState().status === 'saving'">
+                Registrar empréstimo
+              </button>
+            </form>
+          }
+          <p
+            id="emprestimo-status"
+            class="save-status"
+            role="status"
+            [class.error]="loanState().status === 'error'"
+            [class.ok]="loanState().status === 'saved'"
+          >
+            {{ loanState().message }}
+          </p>
+          @if (loans()?.length) {
+            <button type="button" class="btn secondary" (click)="openHistory()">
+              Ver histórico
+            </button>
+          }
+        }
+      </section>
+
       <button type="button" class="btn secondary danger delete" (click)="openDelete()">
         Excluir livro
       </button>
@@ -209,6 +291,49 @@
         <button type="submit" class="btn danger" [disabled]="!canDelete()">Excluir livro</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog #historyDialog class="confirm history-dialog" aria-labelledby="historico-titulo">
+    <div class="dialog-body">
+      <h2 id="historico-titulo">Histórico de empréstimos</h2>
+      <p class="loan-meta">{{ b.title }}</p>
+
+      <div class="history-scroll">
+        <table class="history">
+          <thead>
+            <tr>
+              <th scope="col">RA</th>
+              <th scope="col">Emprestado em</th>
+              <th scope="col">Previsto</th>
+              <th scope="col">Devolvido em</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (loan of loans() ?? []; track loan.id) {
+              <tr>
+                <td>{{ loan.ra }}</td>
+                <td>{{ brDate(loan.loan_date) }}</td>
+                <td>{{ brDate(loan.due_date) }}</td>
+                <td>
+                  @if (loan.return_date; as returned) {
+                    {{ brDate(returned) }}
+                    @if (returned > loan.due_date) {
+                      <span class="late">(com atraso)</span>
+                    }
+                  } @else {
+                    <span class="open">Ainda emprestado</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row actions">
+        <button type="button" class="btn secondary" (click)="closeHistory()">Fechar</button>
+      </div>
+    </div>
   </dialog>
 } @else if (resource.error()) {
   <div class="alert error" role="alert">

@@ -145,6 +145,102 @@ input[aria-invalid='true'] {
   }
 }
 
+// ---- Emprestimo ----
+
+// Cartao estreito na coluna da capa: tudo empilhado e com a largura toda.
+.loan {
+  padding: 0.875rem 1rem;
+
+  h2 {
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  // Menos respiro lateral para "Registrar devolucao" caber em uma linha.
+  .btn {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding-inline: 0.5rem;
+  }
+
+  .save-status {
+    margin-top: 0.5rem;
+  }
+}
+
+.loan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  .field input {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.loan-meta {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.late {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.open {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.history-dialog {
+  width: min(36rem, calc(100% - 2rem));
+
+  .dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+// Em telas estreitas a tabela rola sozinha, sem empurrar a pagina para o lado.
+.history-scroll {
+  overflow-x: auto;
+}
+
+.history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 0.4rem 0.75rem 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  // "(com atraso)" vai para baixo da data para a tabela nao estourar a largura.
+  .late {
+    display: block;
+    font-size: 0.8rem;
+  }
+}
+
 .synopsis {
   margin: 0;
   white-space: pre-line;
