@@ -44,3 +44,12 @@ export interface BookQuery {
   filter_by?: FilterBy;
   filter?: string;
 }
+
+/** Um empréstimo do livro. As datas vêm como "AAAA-MM-DD"; return_date nulo = ainda emprestado. */
+export interface Loan {
+  id: number;
+  ra: string;
+  loan_date: string;
+  due_date: string;
+  return_date: string | null;
+}

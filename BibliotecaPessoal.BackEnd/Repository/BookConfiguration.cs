@@ -66,5 +66,12 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
         builder.HasIndex(b => b.Title, "idx_book_title");
 
         builder.ToTable("book");
+
+        //Coloquei isso para excluir o historico também junto com a exclusão do livro
+        //Mas podemos só deixar o historico indefinitivamente
+        builder.HasMany(b => b.LoanHistories)
+               .WithOne(lh => lh.Book)
+               .HasForeignKey(lh => lh.BookIsbn)
+               .OnDelete(DeleteBehavior.Cascade);
     }
 }

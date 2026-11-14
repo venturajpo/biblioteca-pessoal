@@ -15,3 +15,13 @@ CREATE TABLE IF NOT EXISTS book (
     review TEXT NULL,
     INDEX idx_book_title (title)
 );
+
+CREATE TABLE IF NOT EXISTS LoanHistory (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    BookIsbn VARCHAR(13) NOT NULL,
+    RA VARCHAR(50) NOT NULL,
+    LoanDate DATE NOT NULL,
+    DueDate DATE NOT NULL,
+    ReturnDate DATE NULL, /* Nulo = Ainda não foi devolvido */
+    FOREIGN KEY (BookIsbn) REFERENCES book(isbn) ON DELETE CASCADE
+);

@@ -16,6 +16,7 @@ import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { BookApi } from '../../core/book-api';
+import { Loan } from '../../core/book';
 
 interface SaveState {
   status: 'idle' | 'saving' | 'saved' | 'error';
@@ -26,6 +27,12 @@ const IDLE: SaveState = { status: 'idle', message: '' };
 
 // Limite da coluna paginas_lidas (SMALLINT UNSIGNED).
 const MAX_PAGES = 65535;
+
+// Limite da coluna RA da tabela LoanHistory.
+const MAX_RA = 50;
+
+/** Prazo sugerido para a devolucao, em dias. */
+const LOAN_DAYS = 14;
 
 /** Palavra que precisa ser digitada para confirmar a exclusao. */
 const DELETE_WORD = 'EXCLUIR';
@@ -52,6 +59,25 @@ function plainText(html: string | null | undefined): string {
     .replace(/&amp;/g, '&')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+// Data no formato do <input type="date"> e do back-end (AAAA-MM-DD), no fuso local.
+// O toISOString() usaria UTC e poderia virar o dia a noite.
+function isoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function daysFromToday(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return isoDate(date);
+}
+
+// "2026-10-31" -> "31/10/2026". Sem passar por Date, para nao haver troca de fuso.
+function brDate(iso: string): string {
+  const [year, month, day] = iso.split('-');
+  return `${day}/${month}/${year}`;
 }
 
 // Mesma regra do Book.Progress do back-end.
@@ -127,7 +153,30 @@ export class Detalhes {
   protected readonly canDelete = computed(
     () => this.deleteConfirm().trim() === DELETE_WORD && this.deleteState().status !== 'saving',
   );
+  // Emprestimos vem de outro endpoint: se falharem, o resto da tela continua funcionando.
+  protected readonly loansResource = rxResource({
+    params: () => this.isbn(),
+    stream: ({ params }) => this.api.loans(params),
+  });
+  protected readonly loans = this.loansResource.value;
+  protected readonly openLoan = computed(
+    () => this.loans()?.find((loan) => loan.return_date === null) ?? null,
+  );
+
+  protected readonly today = isoDate(new Date());
+  protected readonly maxRa = MAX_RA;
+  protected readonly brDate = brDate;
+  protected readonly overdue = computed(() => {
+    const loan = this.openLoan();
+    return loan !== null && loan.due_date < this.today;
+  });
+
+  protected readonly raDraft = signal('');
+  protected readonly dueDraft = signal(daysFromToday(LOAN_DAYS));
+  protected readonly loanState = signal<SaveState>(IDLE);
+
   private readonly deleteDialog = viewChild<ElementRef<HTMLDialogElement>>('deleteDialog');
+  private readonly historyDialog = viewChild<ElementRef<HTMLDialogElement>>('historyDialog');
 
   constructor() {
     effect(() => {
@@ -230,6 +279,79 @@ export class Detalhes {
     );
   }
 
+  // ---- Emprestimo ---------------------------------------------------------
+
+  protected onRaInput(value: string): void {
+    this.raDraft.set(value);
+    this.loanState.set(IDLE);
+  }
+
+  protected onDueInput(value: string): void {
+    this.dueDraft.set(value);
+    this.loanState.set(IDLE);
+  }
+
+  protected saveLoan(event: Event): void {
+    event.preventDefault();
+    const book = this.book();
+    if (!book || this.loanState().status === 'saving') return;
+
+    const ra = this.raDraft().trim();
+    if (!ra) {
+      this.fail(this.loanState, 'Informe o RA de quem está pegando o livro.');
+      return;
+    }
+    if (ra.length > MAX_RA) {
+      this.fail(this.loanState, `O RA pode ter no máximo ${MAX_RA} caracteres.`);
+      return;
+    }
+
+    // O <input type="date"> entrega "" quando a data esta incompleta.
+    const due = this.dueDraft();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(due)) {
+      this.fail(this.loanState, 'Informe a data prevista para a devolução.');
+      return;
+    }
+    if (due < this.today) {
+      this.fail(this.loanState, 'A data de devolução não pode ser antes de hoje.');
+      return;
+    }
+
+    this.save(
+      this.loanState,
+      this.api.lend(book.isbn, ra, due),
+      'Empréstimo registrado.',
+      (loan: Loan) => {
+        this.loans.update((list) => [loan, ...(list ?? [])]);
+        this.raDraft.set('');
+        this.dueDraft.set(daysFromToday(LOAN_DAYS));
+      },
+    );
+  }
+
+  protected returnBook(): void {
+    const book = this.book();
+    if (!book || !this.openLoan() || this.loanState().status === 'saving') return;
+
+    this.save(
+      this.loanState,
+      this.api.giveBack(book.isbn),
+      'Devolução registrada.',
+      (returned: Loan) =>
+        this.loans.update((list) =>
+          list?.map((loan) => (loan.id === returned.id ? returned : loan)),
+        ),
+    );
+  }
+
+  protected openHistory(): void {
+    this.historyDialog()?.nativeElement.showModal();
+  }
+
+  protected closeHistory(): void {
+    this.historyDialog()?.nativeElement.close();
+  }
+
   // ---- Exclusao -----------------------------------------------------------
 
   // O <dialog> nativo (showModal) prende o foco, fecha com Esc e devolve o foco ao
@@ -281,17 +403,17 @@ export class Detalhes {
     state.set({ status: 'error', message });
   }
 
-  private save(
+  private save<T>(
     state: WritableSignal<SaveState>,
-    request: Observable<void>,
+    request: Observable<T>,
     successMessage: string,
-    onSuccess: () => void,
+    onSuccess: (value: T) => void,
   ): void {
     state.set({ status: 'saving', message: 'Salvando…' });
 
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        onSuccess();
+      next: (value) => {
+        onSuccess(value);
         state.set({ status: 'saved', message: successMessage });
       },
       error: (err: unknown) => state.set({ status: 'error', message: this.errorMessage(err) }),
@@ -304,6 +426,8 @@ export class Detalhes {
         return 'O servidor recusou o valor informado. Confira e tente de novo.';
       case 404:
         return 'Este livro não existe mais na biblioteca.';
+      case 409:
+        return 'Este livro já está emprestado. Atualize a página.';
       case 0:
         return 'Não foi possível falar com o servidor. Verifique se o back-end está no ar.';
       default:

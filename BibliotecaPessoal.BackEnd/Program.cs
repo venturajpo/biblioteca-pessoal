@@ -57,6 +57,7 @@ public class Program
             services.GetRequiredService<ILogger<FallbackBookCatalog>>()));
 
         builder.Services.AddScoped<IBookRepository, MySqlBookRepository>();
+        builder.Services.AddScoped<ILoanRepository, MySqlLoanRepository>();
 
         var app = builder.Build();
 
